@@ -9,6 +9,8 @@ class netatmo
 	protected $hAuthData    = null;
 	protected $oRest        = null;
 	protected $hCredentials = [];
+	protected $hDevices     = [];
+	protected $hUserData    = [];
 
 	public function __construct (
 		rest $oRest,
@@ -20,7 +22,6 @@ class netatmo
 		$this->oRest = $oRest;
 		$this->hCredentials = $hCredentials;
 		$this->connect();
-		$this->refreshToken();
 	}
 
 	public function read ()
@@ -28,13 +29,24 @@ class netatmo
 		$sPath = "api/getmeasure";
 	}
 
-	public function user ()
+	public function readDevices ()
+	{
+		$sPath = "api/devicelist";
+		$hData = [
+			'access_token' => $this->getToken(),
+		];
+		$hDevices = $this->oRest->get($sPath, $hData, true);
+		$this->hDevices = $hDevices;
+	}
+
+	public function readUser ()
 	{
 		$sPath = "api/getuser";
 		$hData = [
 			'access_token' => $this->getToken(),
 		];
-		$hAuthData = $this->oRest->post($sPath, $hData, true);
+		$hUserData = $this->oRest->get($sPath, $hData, true);
+		$this->hUserData = $hUserData;
 	}
 
 	protected function connect ()
@@ -65,10 +77,10 @@ class netatmo
 		$hData = [
 			"grant_type"    => "refresh_token",
 			"refresh_token" => $this->hAuthData['refresh_token'],
-			"client_id" => $this->hCredentials['client_id'],
+			"client_id"     => $this->hCredentials['client_id'],
 			"client_secret" => $this->hCredentials['client_secret'],
 		];
-		$hAuthData = $this->oRest->post("/oauth2/token", $hData, true);
+		$hAuthData = $this->oRest->post($sPath, $hData, true);
 		$hAuthData['expire_time'] = time() + $hAuthData['expires_in'];
 		$this->hAuthData = array_merge($this->hAuthData, $hAuthData);
 	}
